@@ -48,7 +48,7 @@ int main()
     printf("4) Lancer le programme en forçant l'heure à 00h\n");
     printf("\n");
 
-    //Verification du choix utilisateurs
+    /*Verification du choix utilisateurs*/
     do{
         printf("Attention : votre choix doit être compris entre 1 et 4\n");
         fflush(stdout);
@@ -56,19 +56,21 @@ int main()
     }while(choix <1 || choix >4);
 
     char h[2]; 
+    /*lancement main avec le temps systeme en argument (en heure) grâce à execl*/
     switch(choix){
         case 1:
-        sprintf(h, "%d", heures); //conversion vers string pour le execl
-        execl("./main", "main", h , NULL); //lancement main avec le temps systeme en argument (en heure)
+            if(h == 18) execl("./main", "main", "80", NULL); //80% places pour les non abonnées
+            else if (h == 19) execl("./main", "main", "90", NULL); //90% places pour les non abonnées
+            else execl("./main", "main", "100", NULL); //100% places pour les non abonnées
 
         case 2:
-        execl("./main", "main", "18" , NULL);
+        execl("./main", "main", "80" , NULL); //80% places pour les non abonnées
 
         case 3:
-        execl("./main", "main", "19" , NULL);
+        execl("./main", "main", "90" , NULL); //90% places pour les non abonnées
 
         case 4:
-        execl("./main", "main", "00" , NULL);
+        execl("./main", "main", "00" , NULL); //100% places pour les non abonnées
     }
 
     exit(0);
