@@ -1,8 +1,7 @@
-parking : interface main
-	gcc -o parking interface main
+all: parking main
 
-main : main.c
-	gcc -c main.c -o main
+parking: interface.c
+	gcc interface.c -o parking
 
-interface : interface.c
-	gcc -c interface.c -o interface
+main: main.c
+	gcc main.c -o main -pthread
