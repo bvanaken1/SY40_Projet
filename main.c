@@ -8,6 +8,7 @@
 
 int placeA = 10;
 int placeN = 10;
+int temps;
 pthread_t tidVA[NbVA];
 pthread_t tidVN[NbVN];
 pthread_t tidB[1];
@@ -103,9 +104,10 @@ void *fonc_voiture(void *i)
         }
 }
 
-int main()
+int main(int argc, char *argv[])
 {
-
+    temps = atoi(argv[1]);
+    printf("%d\n",temps);
     int num;
     // pthread_mutex_init(&mutex, 1);
 
