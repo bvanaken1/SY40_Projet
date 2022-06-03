@@ -55,7 +55,8 @@ int main()
         scanf("%d",&choix);
     }while(choix <1 || choix >4);
 
-    char h[2]; 
+    char *h[2];
+    /*TO DO attribuer la valeur de "heures" à h*/
     /*lancement main avec le temps systeme en argument (en heure) grâce à execl*/
     switch(choix){
         case 1:
@@ -64,13 +65,13 @@ int main()
             else execl("./main", "main", "100", NULL); //100% places pour les non abonnées
 
         case 2:
-        execl("./main", "main", "80" , NULL); //80% places pour les non abonnées
+        execl("./main", "main", "80", NULL); //80% places pour les non abonnées
 
         case 3:
-        execl("./main", "main", "90" , NULL); //90% places pour les non abonnées
+        execl("./main", "main", "90", NULL); //90% places pour les non abonnées
 
         case 4:
-        execl("./main", "main", "00" , NULL); //100% places pour les non abonnées
+        execl("./main", "main", "00", NULL); //100% places pour les non abonnées
     }
 
     exit(0);

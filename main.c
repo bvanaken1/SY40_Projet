@@ -3,22 +3,19 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#define NbVA 1 // Nombre de processus symbolisant les voitures abonnées
+#define NbVA 5 // Nombre de processus symbolisant les voitures abonnées
 #define NbVN 10 // Nombre de processus symbolisant les voitures non abonnées
 
-int placeA = 0;
-int placeN = 10;
+int placeA = 8; // Nombre de places abonné
+int placeN = 10; //Nombre de places non abonné
 int sortie = 0;
-int coeff;
-int plafond;
-pthread_t tidVA[NbVA];
-pthread_t tidVN[NbVN];
-pthread_t tidB[1];
+int plafond; //plafond des places non abonné
+pthread_t tidVA[NbVA]; //tableau regroupant les tid des threads abonné
+pthread_t tidVN[NbVN]; //tableau regroupant les tid des threads non abonné
+pthread_t tidB[1]; //tableau le tid de la barrière
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-pthread_cond_t attendre, dormir, attendreb = PTHREAD_COND_INITIALIZER;
+pthread_cond_t attendre, dormir = PTHREAD_COND_INITIALIZER;
 
-// initialisations
-int NbVoituresAttente = 0; // Nombre de clients en attente d'etre coiffes
 
 void Barriere()
 {
@@ -28,6 +25,8 @@ void Barriere()
         if (sortie == 1){
         do{
             printf("Barrière fermée, voiture en sortie\n");
+            /*synchonisation affichage
+            temps vérification si voiture est bien sortie*/
             usleep(10000);
         }while(sortie == 1);
         }
@@ -36,19 +35,10 @@ void Barriere()
     else
     {
         printf("La barrière est fermée car pas de place\n");
-        pthread_cond_wait(&dormir, &mutex);
+        pthread_cond_wait(&dormir, &mutex); //endormissement de la barriere
         pthread_cond_signal(&attendre); // La voiture s'installe dans le parking (et va sortir)
     }
     pthread_mutex_unlock(&mutex);
-}
-
-bool inArray(pthread_t tid, pthread_t tab[]){
-    for (int i = 0; i < sizeof(tab); i++){
-        if (tab[i] == tid){
-            return true;
-        }
-    }
-    return false;
 }
 
 void Voiture(int i)
@@ -58,14 +48,14 @@ void Voiture(int i)
     {
         /*Entrée stationnement*/
         pthread_mutex_lock(&mutex);
-        printf("La voiture N%d avertit la barrière qu'elle est la et patiente\n", i);
-        pthread_cond_signal(&dormir);
-        pthread_cond_wait(&attendre, &mutex);
+        printf("La voiture N%d arrive sur le parking\n", i);
+        pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
         printf("La barrière à invité la voiture N%d à se garer \n", (int)i);
-        placeN--;
+        placeN--; //décrémentation des places
         plafond--; //décrémentation du plafond pour le %de places non abonné dispo en fonction du temps de la journée
         pthread_mutex_unlock(&mutex);
 
+        /* temps de stationnement d'une voiture */
         usleep(10000);
 
         /*sortie stationnement*/
@@ -76,6 +66,7 @@ void Voiture(int i)
         plafond++;
         printf("La voiture N%d a quitté le parking et déverouille la barrière\n", (int)i);
         sortie = 0; //deverouillage de la barrière
+        pthread_cond_signal(&dormir); //on signale à la barriere qu'on part
         pthread_mutex_unlock(&mutex);
 
     }
@@ -92,13 +83,13 @@ void VoitureA(int i)
     {
         /*Entrée stationnement*/
         pthread_mutex_lock(&mutex);
-        printf("La voiture A%d avertit la barrière qu'elle est la et patiente\n", i);
-        pthread_cond_signal(&dormir);
-        pthread_cond_wait(&attendre, &mutex);
+        printf("La voiture A%d arrive sur le parking\n", i);
+        pthread_cond_wait(&attendre, &mutex); //en attente de la barriere
         printf("La barrière à invité la voiture A%d à se garer \n", (int)i);
         placeA--;
         pthread_mutex_unlock(&mutex);
 
+        /* temps de stationnement d'une voiture */
         usleep(10000);
         
         /*sortie stationnement*/
@@ -108,19 +99,20 @@ void VoitureA(int i)
         placeA++;
         printf("La voiture A%d a quitté le parking et déverouille la barrière\n", (int)i);
         sortie = 0; //deverouillage de la barrière
+        pthread_cond_signal(&dormir); //on signale à la barriere qu'on part
         pthread_mutex_unlock(&mutex);
 
     } else if (placeA == 0 && placeN >0)
     {
         /*Entrée stationnement*/
         pthread_mutex_lock(&mutex);
-        printf("La voiture A%d avertit la barrière qu'elle est la et patiente\n", i);
-        pthread_cond_signal(&dormir);
-        pthread_cond_wait(&attendre, &mutex);
+        printf("La voiture A%d arrive sur le parking\n", i);
+        pthread_cond_wait(&attendre, &mutex); //en attente de la barriere
         printf("La barrière à invité la voiture A%d à se garer sur une place non abonnée \n", (int)i);
         placeN--;
         pthread_mutex_unlock(&mutex);
 
+        /* temps de stationnement d'une voiture */
         usleep(10000);
         
         /*sortie stationnement*/
@@ -130,6 +122,7 @@ void VoitureA(int i)
         placeN++;
         printf("La voiture A%d a quitté le parking et déverouille la barrière\n", (int)i);
         sortie = 0; //deverouillage de la barrière
+        pthread_cond_signal(&dormir);//on signale à la barriere qu'on part
         pthread_mutex_unlock(&mutex);
     }
     
@@ -143,11 +136,11 @@ void VoitureA(int i)
 
 void *fonc_parking()
 {
-
     while (1)
     {
         Barriere();
-        /* temps de stationement d'une voiture */
+        /*synchronisation entrée / sortie affichage
+        temps de levée / abaissement barriere*/
         usleep(300000);
     }
 }
@@ -164,12 +157,13 @@ void *fonc_voitureA(void *i)
 
 int main(int argc, char *argv[])
 {
-    coeff = atoi(argv[1]); //coefficient en fonction de l'heure de la journée
+    int coeff = atoi(argv[1]); ////coefficient régissant le plafond des places non abonnées en fonction de l'heure
     plafond = (coeff / 100.0) * placeN; //on définit le plafond pour les non abonnées en fonction de l'heure passée en paramètre.
-    printf("le plafond %d\n",plafond);
-    int num;
+    printf("\n!! Zone de débordement activée, coefficient = %d %%!!\n", coeff);
+    printf("!! Places non abonnées disponibles : %d !! \n\n",plafond);
 
-    // creation de la thread coiffeur
+    int num;
+    // creation de la thread barrière
     pthread_create(tidB, 0, (void *(*)())fonc_parking, NULL);
 
     // creation des threads voitures
