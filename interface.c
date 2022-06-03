@@ -1,3 +1,5 @@
+/* Projet réalisé par Brice VAN AKEN et Thomas STREBLER */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

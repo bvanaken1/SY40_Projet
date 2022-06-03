@@ -1,3 +1,5 @@
+/* Projet réalisé par Brice VAN AKEN et Thomas STREBLER */
+
 #include <stdio.h>
 #include <pthread.h>
 #include <stdbool.h>
