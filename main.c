@@ -4,17 +4,22 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <unistd.h>
 
-#define NbVA 5 // Nombre de processus symbolisant les voitures abonnées
-#define NbVN 10 // Nombre de processus symbolisant les voitures non abonnées
+// #define NbVA 255 // Nombre de processus symbolisant les voitures abonnées
+// #define NbVN 255 // Nombre de processus symbolisant les voitures non abonnées
 
-int placeA = 8; // Nombre de places abonné
-int placeN = 10; //Nombre de places non abonné
+int NbV = 50;       // Nombre de voitures 
+int placeA = 5;     // Nombre de places abonné
+int placeN = 10;    // Nombre de places non abonné
+
+pthread_t tidB[1]; //tableau du tid de la barrière
+
 int sortie = 0;
 int plafond; //plafond des places non abonné
-pthread_t tidVA[NbVA]; //tableau regroupant les tid des threads abonné
-pthread_t tidVN[NbVN]; //tableau regroupant les tid des threads non abonné
-pthread_t tidB[1]; //tableau le tid de la barrière
+// pthread_t tidVA[NbVA]; //tableau regroupant les tid des threads abonné
+// pthread_t tidVN[NbVN]; //tableau regroupant les tid des threads non abonné
+
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t attendre, dormir = PTHREAD_COND_INITIALIZER;
 
@@ -57,8 +62,8 @@ void Voiture(int i)
         plafond--; //décrémentation du plafond pour le %de places non abonné dispo en fonction du temps de la journée
         pthread_mutex_unlock(&mutex);
 
-        /* temps de stationnement d'une voiture */
-        usleep(10000);
+        /* temps de stationnement d'une voiture aléatoire entre 5000 et 30000 µs */
+        usleep(rand()%25001 + 5000);
 
         /*sortie stationnement*/
         pthread_mutex_lock(&mutex);
@@ -86,13 +91,13 @@ void VoitureA(int i)
         /*Entrée stationnement*/
         pthread_mutex_lock(&mutex);
         printf("La voiture A%d arrive sur le parking\n", i);
-        pthread_cond_wait(&attendre, &mutex); //en attente de la barriere
-        printf("La barrière à invité la voiture A%d à se garer \n", (int)i);
+        pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
+        printf("La barrière a invité la voiture A%d à se garer \n", (int)i);
         placeA--;
         pthread_mutex_unlock(&mutex);
 
-        /* temps de stationnement d'une voiture */
-        usleep(10000);
+        /* temps de stationnement d'une voiture aléatoire entre 5000 et 30000 µs */
+        usleep(rand()%25001 + 5000);
         
         /*sortie stationnement*/
         pthread_mutex_lock(&mutex);
@@ -114,8 +119,8 @@ void VoitureA(int i)
         placeN--;
         pthread_mutex_unlock(&mutex);
 
-        /* temps de stationnement d'une voiture */
-        usleep(10000);
+        /* temps de stationnement d'une voiture aléatoire entre 5000 et 30000 µs */
+        usleep(rand()%25001 + 5000);
         
         /*sortie stationnement*/
         pthread_mutex_lock(&mutex);
@@ -160,29 +165,59 @@ void *fonc_voitureA(void *i)
 int main(int argc, char *argv[])
 {
     int coeff = atoi(argv[1]); ////coefficient régissant le plafond des places non abonnées en fonction de l'heure
+    //remplacement des valeurs de place par défaut par celles données en argument
+    if (argc > 4){
+        placeA = atoi(argv[2]);
+        placeN = atoi(argv[3]);
+        NbV = atoi(argv[4]);
+    }
     plafond = (coeff / 100.0) * placeN; //on définit le plafond pour les non abonnées en fonction de l'heure passée en paramètre.
     printf("\n!! Zone de débordement activée, coefficient = %d %%!!\n", coeff);
     printf("!! Places non abonnées disponibles : %d !! \n\n",plafond);
 
-    int num;
+
+    printf("PlaceA = %d, PlaceN = %d, NbV = %d\n",placeA,placeN,NbV);
+
     // creation de la thread barrière
     pthread_create(tidB, 0, (void *(*)())fonc_parking, NULL);
 
-    // creation des threads voitures
-    for (num = 0; num < NbVA; num++) //abonné
-        pthread_create(tidVA + num, 0, (void *(*)())fonc_voitureA, (void *)num);
+    // int num;
+    // // creation des threads voitures
+    // for (num = 0; num < NbVA; num++) //abonné
+    //     pthread_create(tidVA + num, 0, (void *(*)())fonc_voitureA, (void *)num);
 
-    for (num = 0; num < NbVN; num++) //non abonné
-        pthread_create(tidVN + num, 0, (void *(*)())fonc_voiture, (void *)num);
+    // for (num = 0; num < NbVN; num++) //non abonné
+    //     pthread_create(tidVN + num, 0, (void *(*)())fonc_voiture, (void *)num);
+
+    // // attend la fin de toutes les threads voiture
+    // for (num = 0; num < NbVA; num++) //abonné
+    //     pthread_join(tidVA[num], NULL);
+    
+    // for (num = 0; num < NbVN; num++)
+    //     pthread_join(tidVN[num], NULL);  //non abonné
+
+    int num = 0;
+    int numA = 0;
+    int numN = 0;
+    pthread_t tidV[NbV]; //tableau des tid des voitures
+
+    // creation des threads voitures
+    for (num = 0; num < NbV; num++){
+        if (rand()%2 == 0){
+            pthread_create(tidV + num, 0, (void *(*)())fonc_voitureA, (void *)numA);
+            numA++;
+        } else{
+            pthread_create(tidV + num, 0, (void *(*)())fonc_voiture, (void *)numN);
+            numN++;
+        }
+        usleep(100000);
+    }
 
     // attend la fin de toutes les threads voiture
-    for (num = 0; num < NbVA; num++) //abonné
-        pthread_join(tidVA[num], NULL);
-    
-    for (num = 0; num < NbVN; num++)
-        pthread_join(tidVN[num], NULL);  //non abonné
+    for (num = 0; num < NbV; num++) //abonné
+        pthread_join(tidV[num], NULL);
 
-    /* liberation des ressources");*/
+    /* liberation des ressources */
     pthread_exit(NULL);
 
     exit(0);
