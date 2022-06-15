@@ -50,13 +50,13 @@ void Barriere()
 
 void Voiture(int i)
 {
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
 
     if (placeN>0 && plafond>0) //En effet, les places non abonnées dispo sont pas les mêmes en fonction du temps de la journée
     {
         /*Entrée stationnement*/
-        pthread_mutex_lock(&mutex);
         printf("La voiture N%d arrive sur le parking\n", i);
-        pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
         printf("La barrière à invité la voiture N%d à se garer \n", (int)i);
         placeN--; //décrémentation des places
         plafond--; //décrémentation du plafond pour le %de places non abonné dispo en fonction du temps de la journée
@@ -78,6 +78,7 @@ void Voiture(int i)
 
     }
     else{
+        pthread_mutex_unlock(&mutex);
         printf("La voiture N%d ne trouve pas de place et passe son chemin\n", i);
     }
     
@@ -85,13 +86,13 @@ void Voiture(int i)
 
 void VoitureA(int i)
 {
+    pthread_mutex_lock(&mutex);
+    pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
 
     if (placeA>0)
     {
         /*Entrée stationnement*/
-        pthread_mutex_lock(&mutex);
         printf("La voiture A%d arrive sur le parking\n", i);
-        pthread_cond_wait(&attendre, &mutex); //en attente de la barrière
         printf("La barrière a invité la voiture A%d à se garer \n", (int)i);
         placeA--;
         pthread_mutex_unlock(&mutex);
@@ -112,9 +113,7 @@ void VoitureA(int i)
     } else if (placeA == 0 && placeN >0)
     {
         /*Entrée stationnement*/
-        pthread_mutex_lock(&mutex);
         printf("La voiture A%d arrive sur le parking\n", i);
-        pthread_cond_wait(&attendre, &mutex); //en attente de la barriere
         printf("La barrière à invité la voiture A%d à se garer sur une place non abonnée \n", (int)i);
         placeN--;
         pthread_mutex_unlock(&mutex);
@@ -134,6 +133,7 @@ void VoitureA(int i)
     }
     
     else{
+        pthread_mutex_unlock(&mutex);
         printf("La voiture A%d ne trouve pas de place et passe son chemin\n", i);
     }
         /* temps de sortie parking */
@@ -181,22 +181,7 @@ int main(int argc, char *argv[])
     // creation de la thread barrière
     pthread_create(tidB, 0, (void *(*)())fonc_parking, NULL);
 
-    // int num;
-    // // creation des threads voitures
-    // for (num = 0; num < NbVA; num++) //abonné
-    //     pthread_create(tidVA + num, 0, (void *(*)())fonc_voitureA, (void *)num);
-
-    // for (num = 0; num < NbVN; num++) //non abonné
-    //     pthread_create(tidVN + num, 0, (void *(*)())fonc_voiture, (void *)num);
-
-    // // attend la fin de toutes les threads voiture
-    // for (num = 0; num < NbVA; num++) //abonné
-    //     pthread_join(tidVA[num], NULL);
-    
-    // for (num = 0; num < NbVN; num++)
-    //     pthread_join(tidVN[num], NULL);  //non abonné
-
-    int num = 0;
+    int num;
     int numA = 0;
     int numN = 0;
     pthread_t tidV[NbV]; //tableau des tid des voitures
